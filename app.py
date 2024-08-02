@@ -1,10 +1,9 @@
-from flask import Flask, request, render_template
-from models import model_MDM, model_SCLB, model_NCLB
+import streamlit as st
 from PIL import Image
 import numpy as np
+from models import model_MDM, model_SCLB, model_NCLB
 
-app = Flask(__name__)
-
+# Prediction function
 def preprocess_image(image, target_size):
     image = image.resize(target_size)
     image = np.asarray(image) / 255.0
@@ -27,24 +26,18 @@ def predict_disease(image, model_type):
     else:
         return model_type
 
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        if 'file' not in request.files or 'model_type' not in request.form:
-            return render_template('index.html', result="No file or model type selected")
-        
-        file = request.files['file']
-        model_type = request.form['model_type']
-        
-        if file.filename == '':
-            return render_template('index.html', result="No selected file")
-        
-        if file:
-            image = Image.open(file.stream)
-            result = predict_disease(image, model_type)
-            return render_template('index.html', result=result)
-    
-    return render_template('index.html', result=None)
+# Streamlit app
+def main():
+    st.title('Maize Leaf Disease Classification')
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
+        model_type = st.selectbox('Select Model Type', ['MDM', 'SCLB', 'NCLB'])
+        if st.button('Classify'):
+            result = predict_disease(image, model_type)
+            st.success(f'This leaf is classified as: {result}')
+
+if __name__ == '__main__':
+    main()
